@@ -7,6 +7,8 @@ from django.core.mail import send_mail
 from django.views.decorators.http import require_POST
 from taggit.models import Tag
 from django.db.models import Count
+from . forms import SherchForm
+from django.contrib.postgres.search import SearchVector
 
 def post_list(request, tag_slug=None):
     post_list = Post.objects.all()
@@ -85,3 +87,15 @@ def post_comment(request, post_id):
         # Save the comment to the database
         comment.save()
     return render(request, 'blog/post/comment.html', {'post': post, 'form': form, 'comment': comment})
+def post_search(request):
+    form = SherchForm()
+    query = None
+    results = []
+    if 'query' in request.GET:
+        form = SherchForm(request.GET)
+        if form.is_valid():
+            query = form.cleaned_data['query']
+            results = Post.objects.annotate(sherch=SearchVector('title','body'),).filter(sherch=query)
+    return render(request, 'blog/post/search.html', {'form': form, 'query': query, 'results': results})
+
+    
